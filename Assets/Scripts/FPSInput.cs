@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,6 +25,8 @@ namespace Echoes_At_The_Last_Station
         public Transform holdPoint;  // Точка, куда игрок "держит" предмет (поставить пустой объект в руках камеры или модели)
         public float pickupRange = 2f;  // Максимальная дистанция для поднятия
         private GameObject heldObject = null;  // Текущий поднимаемый объект
+
+        public event Action OnItemPickedUp;
 
 
         void Start()
@@ -136,6 +139,7 @@ namespace Echoes_At_The_Last_Station
             if (rb != null)
             {
                 rb.isKinematic = true;
+                OnItemPickedUp?.Invoke();
             }
 
             // Прикрепляем к точке удержания
