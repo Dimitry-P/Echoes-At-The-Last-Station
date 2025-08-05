@@ -1,40 +1,61 @@
 using UnityEngine;
 
-public class DialogueTriggerZone : MonoBehaviour
+public class DialogueTrigger : MonoBehaviour
 {
-    public DialogueManager dialogueManager;
+    public DialogueData dialogueData;
+    public DialogueType dialogueType = DialogueType.Conversation;
+    public bool playOnlyOnce = true;
 
-    private bool playerInRange = false;
-    [SerializeField] private Transform npcHead;
+    private bool isPlayerInTrigger = false;
+    private bool wasPlayed = false;
 
-    void OnTriggerEnter(Collider other)
+    private void Update()
+    {
+        if (!isPlayerInTrigger) return;
+
+        // Для воспоминаний: запуск автоматически
+        if (dialogueType == DialogueType.Memory &&
+            !DialogueManager.Instance.IsDialogueActive &&
+            !(playOnlyOnce && wasPlayed))
+        {
+            StartMemoryDialogue();
+        }
+
+        // Для диалогов: запуск по нажатию E
+        if (dialogueType == DialogueType.Conversation &&
+            Input.GetKeyDown(KeyCode.E) &&
+            !DialogueManager.Instance.IsDialogueActive &&
+            !(playOnlyOnce && wasPlayed))
+        {
+            StartConversationDialogue();
+        }
+    }
+
+    private void StartMemoryDialogue()
+    {
+        wasPlayed = true;
+        DialogueManager.Instance.StartDialogue(dialogueData);
+    }
+
+    private void StartConversationDialogue()
+    {
+        wasPlayed = true;
+        DialogueManager.Instance.StartDialogue(dialogueData);
+    }
+
+    private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log("Player entered trigger");
-            playerInRange = true;
+            isPlayerInTrigger = true;
         }
     }
 
-    void OnTriggerExit(Collider other)
+    private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log("Player exited trigger");
-            playerInRange = false;
+            isPlayerInTrigger = false;
         }
     }
-
-    void Update()
-    {
-        if (playerInRange && Input.GetKeyDown(KeyCode.E))
-        {
-            Debug.Log("E pressed in range, starting dialogue");
-            if (!dialogueManager.IsDialogueActive)
-            {
-                dialogueManager.StartDialogue();
-            }
-        }
-    }
-
 }
