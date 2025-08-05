@@ -2,6 +2,8 @@ using UnityEngine;
 using TMPro;
 using Echoes_At_The_Last_Station;
 using System.Collections;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class DialogueManager : MonoBehaviour
 {
@@ -21,19 +23,32 @@ public class DialogueManager : MonoBehaviour
     public DialogueUIController dialogueUIController;
     public float continueCooldown = 0.3f;
 
+    [Header("Scene Transition")]
+    public Image fadeOverlay;
+    public float fadeDuration = 1f;
+    public Color fadeColor = Color.black;
+
     private DialogueLine[] currentDialogueLines;
     private int currentLineIndex;
     private bool isDialogueActive;
     private bool canContinue = false;
     public System.Action OnDialogueContinue;
     private bool wasKeyPressedBeforeDialogue = false;
+    private string sceneToLoadAfterDialogue;
 
     public bool IsDialogueActive => isDialogueActive;
 
     void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     void Start()
@@ -42,6 +57,12 @@ public class DialogueManager : MonoBehaviour
         {
             mouseLook = player.GetComponent<MouseLook>();
             fpsInput = player.GetComponent<FPSInput>();
+        }
+
+        if (fadeOverlay != null)
+        {
+            fadeOverlay.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0);
+            fadeOverlay.gameObject.SetActive(false);
         }
     }
 
@@ -60,13 +81,11 @@ public class DialogueManager : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            canContinue = false;
-            ShowNextLine();
-            StartCoroutine(ContinueCooldown());
+            ProcessDialogueInput();
         }
     }
 
-    public void StartDialogue(DialogueData dialogue)
+    public void StartDialogue(DialogueData dialogue, string sceneToLoad = "")
     {
         if (isDialogueActive || dialogue == null || dialogue.lines == null || dialogue.lines.Length == 0)
         {
@@ -74,18 +93,22 @@ public class DialogueManager : MonoBehaviour
             return;
         }
 
+        sceneToLoadAfterDialogue = sceneToLoad;
         wasKeyPressedBeforeDialogue = false;
         currentDialogueLines = dialogue.lines;
         currentLineIndex = 0;
         isDialogueActive = true;
         canContinue = true;
 
-        // Disable player controls
-        if (mouseLook != null) mouseLook.enabled = false;
-        if (fpsInput != null) fpsInput.enabled = false;
-
-        // Show first line immediately
+        TogglePlayerControls(false);
         ShowLine(currentLineIndex);
+    }
+
+    private void ProcessDialogueInput()
+    {
+        canContinue = false;
+        ShowNextLine();
+        StartCoroutine(ContinueCooldown());
     }
 
     public void ShowNextLine()
@@ -101,8 +124,50 @@ public class DialogueManager : MonoBehaviour
         }
         else
         {
-            EndDialogue();
+            if (!string.IsNullOrEmpty(sceneToLoadAfterDialogue))
+            {
+                StartCoroutine(TransitionToScene());
+            }
+            else
+            {
+                EndDialogue();
+            }
         }
+    }
+
+    private IEnumerator TransitionToScene()
+    {
+        // Fade out effect
+        if (fadeOverlay != null)
+        {
+            yield return StartCoroutine(FadeScreen(0, 1));
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        EndDialogue();
+
+        if (!string.IsNullOrEmpty(sceneToLoadAfterDialogue))
+        {
+            SceneManager.LoadScene(sceneToLoadAfterDialogue);
+        }
+    }
+
+    private IEnumerator FadeScreen(float startAlpha, float endAlpha)
+    {
+        fadeOverlay.gameObject.SetActive(true);
+        float elapsed = 0f;
+        Color color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, startAlpha);
+
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            color.a = Mathf.Lerp(startAlpha, endAlpha, elapsed / fadeDuration);
+            fadeOverlay.color = color;
+            yield return null;
+        }
+
+        color.a = endAlpha;
+        fadeOverlay.color = color;
     }
 
     void ShowLine(int index)
@@ -129,24 +194,27 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    void EndDialogue()
+    public void EndDialogue()
     {
         isDialogueActive = false;
+        currentDialogueLines = null;
+        sceneToLoadAfterDialogue = null;
 
         if (cameraLookAt != null)
             cameraLookAt.ClearTarget();
 
-        if (mouseLook != null)
-            mouseLook.enabled = true;
-
-        if (fpsInput != null)
-            fpsInput.enabled = true;
+        TogglePlayerControls(true);
 
         if (dialogueUIController != null)
             dialogueUIController.HideDialogue();
 
-        currentDialogueLines = null;
-        OnDialogueContinue = null; // Clear all subscribers
+        OnDialogueContinue = null;
+    }
+
+    public void TogglePlayerControls(bool enable)
+    {
+        if (mouseLook != null) mouseLook.enabled = enable;
+        if (fpsInput != null) fpsInput.enabled = enable;
     }
 
     IEnumerator ContinueCooldown()
