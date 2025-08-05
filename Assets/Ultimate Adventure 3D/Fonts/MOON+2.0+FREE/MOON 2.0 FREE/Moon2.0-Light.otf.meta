@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: 07b8ee51fb47fbc48bac32dde58b8e6b
+timeCreated: 1585381201
+licenseType: Free
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Moon 2.0
+  fontNames:
+  - Moon 2.0
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
