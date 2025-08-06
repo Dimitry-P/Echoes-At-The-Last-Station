@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - Pickup
+  - Handle
+  - Interactable
+  - DoorHandle
   layers:
   - Default
   - TransparentFX
